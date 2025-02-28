@@ -42,10 +42,37 @@ public class UserController {
             user.setName(userRequest.getName());
             user.setEmail(userRequest.getEmail());
             user.setPassword(encodedPassword);
-            System.out.println(encodedPassword);
             userRepository.save(user);
 
             return new ResponseEntity<>("User saved successfully", HttpStatus.CREATED);
+        } catch (Exception error) {
+            System.out.println(error);
+            return new ResponseEntity<>("An error occurred while saving the user: " + error.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR); // Include error message
+        }
+    }
+
+    @PostMapping(path = "/add", consumes = "application/json")
+    public @ResponseBody ResponseEntity<String> authUser(@Valid @RequestBody UserDTO userRequest, BindingResult result) {
+
+        if (result.hasErrors()) {
+            return new ResponseEntity<>("Invalid data", HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            User user = new User();
+            user.setEmail(userRequest.getEmail());
+            user.setPassword(userRequest.getPassword());
+
+            User userSaved = userRepository.findByEmail(user.getEmail());
+
+            boolean isAuth = passwordEncoderService.matches(user.getPassword(), userSaved.getPassword());
+
+            if(isAuth) {
+                return new ResponseEntity<>("User saved successfully", HttpStatus.CREATED);
+            } else {
+                return new ResponseEntity<>("User or password not found", HttpStatus.UNAUTHORIZED);
+            }
+
         } catch (Exception error) {
             System.out.println(error);
             return new ResponseEntity<>("An error occurred while saving the user: " + error.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR); // Include error message

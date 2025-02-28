@@ -9,23 +9,25 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserRepository userRepository; // Inject UserRepository
+    private final UserRepository userRepository;
     private final PasswordEncoderService passwordEncoderService;
+    private final JwtFilter jwtFilter; // Injeta o JwtFilter
 
-    public SecurityConfig(UserRepository userRepository, PasswordEncoderService passwordEncoderService) {
+    public SecurityConfig(UserRepository userRepository, PasswordEncoderService passwordEncoderService, JwtFilter jwtFilter) {
         this.userRepository = userRepository;
         this.passwordEncoderService = passwordEncoderService;
+        this.jwtFilter = jwtFilter;
     }
 
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() { // BCrypt is recommended
+    public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
@@ -33,10 +35,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/user/**").permitAll() // Libera a rota /user e seus subcaminhos
-                        .anyRequest().authenticated() // Exige autenticação para todas as outras rotas
+                        .requestMatchers("/user/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .csrf(csrf -> csrf.disable()); // Desabilita CSRF (opcional, dependendo do seu caso de uso)
+                .csrf(csrf -> csrf.disable())
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // Adiciona o JwtFilter antes do filtro de autenticação padrão
 
         return http.build();
     }

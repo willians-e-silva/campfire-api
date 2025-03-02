@@ -1,8 +1,6 @@
 package com.campfire.api.service;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +25,19 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-        return getClaims(token).getSubject();
+        try {
+            return getClaims(token).getSubject();
+        } catch (JwtException e) {
+            return null; // Handle invalid token
+        }
     }
 
     public boolean isTokenValid(String token) {
-        return extractExpiration(token).after(new Date());
+        try {
+            return extractExpiration(token).after(new Date());
+        } catch (JwtException e) {
+            return false; // Handle invalid token
+        }
     }
 
     private Date extractExpiration(String token) {
